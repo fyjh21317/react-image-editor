@@ -1,93 +1,90 @@
-import { useState, useEffect } from 'react';
-import { Box, Flex, Button, VStack, FileUpload } from '@chakra-ui/react';
-import { LuUpload, LuCrop, LuFileImage } from 'react-icons/lu';
+import { useState, useRef } from 'react';
+import { Box, Flex, Button, VStack } from '@chakra-ui/react';
+import { LuUpload, LuCrop } from 'react-icons/lu';
 import { MdModeEdit } from 'react-icons/md';
+import ImageBox from './components/ImageBox.jsx';
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null);
-  const [acceptedFiles, setAcceptedFiles] = useState([]);
+  const [croppedImage, setCroppedImage] = useState(null);
+  // 裁剪工具實體 DOM
+  const cropperRef = useRef(null);
+  // 檔案上傳實體 DOM
+  const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    if (acceptedFiles.length > 0) {
-      const imageUrl = URL.createObjectURL(acceptedFiles[0]);
+  // 讀取上傳的圖片
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
+      // 清除裁剪後的圖片
+      setCroppedImage(null);
     }
-    console.log('Accepted files:', acceptedFiles);
-  }, [acceptedFiles]);
+  };
+
+  // 裁剪
+  const handleCrop = () => {
+    const cropper = cropperRef.current?.cropper;
+    if (cropper) {
+      setCroppedImage(cropper.getCroppedCanvas().toDataURL());
+    }
+  };
 
   return (
-    <Flex minH="100vh" bg="gray.50" p={4}>
-      {/* Left Sidebar */}
+    <Flex h="100vh" bg="gray.50" p={4}>
+      {/* 功能列 */}
       <Box w="20%" p={4}>
         <VStack spacing={4} align="stretch">
-          {/* 上傳圖片 */}
-          <FileUpload.Root accept="image/*">
-            <FileUpload.HiddenInput />
-            <FileUpload.Trigger asChild>
-              <Button colorScheme="teal" variant="outline" w="full">
-                <LuUpload />
-                Upload Image
-              </Button>
-            </FileUpload.Trigger>
-            <FileUpload.Context>
-              {({ acceptedFiles }) => {
-                setAcceptedFiles(acceptedFiles);
-                return null;
-              }}
-            </FileUpload.Context>
-          </FileUpload.Root>
-
-          {/* 裁剪圖片 */}
+          {/* 上傳圖片 按鈕*/}
           <Button
-            colorScheme="teal"
+            variant="outline"
+            w="full"
+            onClick={() => fileInputRef.current.click()}
+          >
+            <LuUpload />
+            Upload Image
+          </Button>
+          <input
+            type="file"
+            accept="image/*"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={handleFileChange}
+          />
+
+          {/* 裁剪圖片 按鈕*/}
+          <Button
             variant="outline"
             disabled={!selectedImage}
+            onClick={handleCrop}
           >
             <LuCrop /> Crop Image
           </Button>
 
-          {/* 編輯圖片 */}
-          <Button
-            colorScheme="teal"
-            variant="outline"
-            disabled={!selectedImage}
-          >
+          {/* 編輯圖片 按鈕*/}
+          <Button variant="outline" disabled={!selectedImage}>
             <MdModeEdit />
             Edit Image
           </Button>
         </VStack>
       </Box>
 
-      {/* Right Image Area */}
-      <Box w="80%" h="100%" p={4}>
-        <Box
-          textAlign="center"
-          color="gray.500"
-          borderWidth="1px"
-          borderColor="gray.300"
-          borderRadius="md"
-          borderStyle="dashed"
-          p={4}
-          h="80vh"
-          overflow="hidden"
-        >
-          {selectedImage ? (
-            <img
-              src={selectedImage}
-              alt="Selected"
-              style={{
-                maxWidth: '100%',
-                maxHeight: '100%',
-                borderRadius: '8px',
-                objectFit: 'contain',
-              }}
-            />
-          ) : (
-            <Box textAlign="center" color="gray.500">
-              No image selected yet.
-            </Box>
-          )}
-        </Box>
+      {/* 編輯區 */}
+      <Box w="80%" h="100%" display="flex" p={4}>
+        {/* 左邊：可裁剪的圖片 */}
+        <ImageBox
+          cropperRef={cropperRef}
+          title="Original Image (Croppable)"
+          imageSrc={selectedImage}
+          isCropper={true}
+        />
+
+        {/* 間距 */}
+        <Box w="16px" />
+
+        {/* 右邊：裁剪後圖片 */}
+        <ImageBox title="Cropped Image" imageSrc={croppedImage} />
       </Box>
     </Flex>
   );
