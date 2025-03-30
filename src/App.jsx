@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Box, Flex, Button, VStack } from '@chakra-ui/react';
 import { LuUpload, LuCrop } from 'react-icons/lu';
-import { MdModeEdit } from 'react-icons/md';
+import { MdOutlineClear } from 'react-icons/md';
 import ImageBox from './components/ImageBox.jsx';
 
 function App() {
@@ -17,18 +17,32 @@ function App() {
     const file = event.target.files[0];
     if (file) {
       const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
-      // 清除裁剪後的圖片
-      setCroppedImage(null);
+      if (imageUrl !== selectedImage) {
+        setSelectedImage(imageUrl);
+        // 清除之前的裁剪圖片
+        setCroppedImage(null);
+      }
     }
   };
 
-  // 裁剪
+  // 當點選 裁剪圖片
   const handleCrop = () => {
-    const cropper = cropperRef.current?.cropper;
-    if (cropper) {
-      setCroppedImage(cropper.getCroppedCanvas().toDataURL());
+    try {
+      const cropper = cropperRef.current?.cropper;
+      if (cropper) {
+        setCroppedImage(cropper.getCroppedCanvas().toDataURL());
+      } else {
+        console.error('Error: Cropper is not initialized.');
+      }
+    } catch (error) {
+      console.error('Error cropping image:', error);
     }
+  };
+
+  // 當點選 清除圖片
+  const handleClear = () => {
+    setSelectedImage(null);
+    setCroppedImage(null);
   };
 
   return (
@@ -62,10 +76,13 @@ function App() {
             <LuCrop /> Crop Image
           </Button>
 
-          {/* 編輯圖片 按鈕*/}
-          <Button variant="outline" disabled={!selectedImage}>
-            <MdModeEdit />
-            Edit Image
+          {/* 清除圖片 按鈕*/}
+          <Button
+            variant="outline"
+            disabled={!selectedImage}
+            onClick={handleClear}
+          >
+            <MdOutlineClear /> Clear Image
           </Button>
         </VStack>
       </Box>
@@ -84,7 +101,7 @@ function App() {
         <Box w="16px" />
 
         {/* 右邊：裁剪後圖片 */}
-        <ImageBox title="Cropped Image" imageSrc={croppedImage} />
+        <ImageBox imageSrc={croppedImage} />
       </Box>
     </Flex>
   );
